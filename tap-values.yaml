@@ -1,0 +1,52 @@
+profile: full
+
+contour:
+  envoy:
+    service:
+      type: LoadBalancer
+
+shared:
+  ingress_domain: 34.136.250.20.nip.io #<- **** this the external ip I got after the install was done 
+
+
+ceip_policy_disclosed: true # Installation fails if this is not set to true. Not a string.
+buildservice:
+  kp_default_repository: "gabo1208/build-service/"
+  kp_default_repository_secret:
+    name: kp-default-repository-creds
+    namespace: tap-install
+
+
+supply_chain: basic
+
+ootb_supply_chain_basic:
+  registry:
+    server: "index.docker.io"
+    repository: "gabo1208"
+  gitops:
+    ssh_secret: ""
+
+tap_gui:
+  service_type: ClusterIP
+  app_config:
+    app:
+      baseUrl: http://tap-gui.34.136.250.20.nip.io # No port needed with Ingress
+    catalog:
+      locations:
+        - type: url
+          target: https://github.com/tanzu-demo/tap-gui-catalogs/blob/main/blank/catalog-info.yaml
+    backend:
+      baseUrl: http://tap-gui.34.136.250.20.nip.io # No port needed with Ingress
+      cors:
+        origin: http://tap-gui.34.136.250.20.nip.io # No port needed with Ingress
+
+metadata_store:
+  ns_for_export_app_cert: "*"
+  app_service_type: ClusterIP
+
+scanning:
+  metadataStore:
+    url: "" # Deactivate embedded integration since it's deprecated
+
+grype:
+  targetImagePullSecret: "tap-registry"

@@ -1,0 +1,14 @@
+service_type: ClusterIP
+#ingressEnabled: false
+ingressDomain: 34.132.56.67.nip.io
+app_config:
+  app:
+    baseUrl: http://tap-gui.34.132.56.67.nip.io # No port needed with Ingress
+  catalog:
+    locations:
+      - type: url
+        target: https://github.com/tanzu-demo/tap-gui-catalogs/blob/main/blank/catalog-info.yaml
+  backend:
+    baseUrl: http://tap-gui.34.132.56.67.nip.io # No port needed with Ingress
+    cors:
+      origin: http://tap-gui.34.132.56.67.nip.io # No port needed with Ingress
