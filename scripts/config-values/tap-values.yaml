@@ -6,8 +6,7 @@ contour:
       type: LoadBalancer
 
 shared:
-  ingress_domain: 34.136.250.20.nip.io #<- **** this the external ip I got after the install was done 
-
+  ingress_domain: 34.171.209.37.nip.io #<- **** this the external ip I got after the install was done 
 
 ceip_policy_disclosed: true # Installation fails if this is not set to true. Not a string.
 buildservice:
@@ -27,18 +26,22 @@ ootb_supply_chain_basic:
     ssh_secret: ""
 
 tap_gui:
-  service_type: ClusterIP
+  service_type: LoadBalancer
   app_config:
-    app:
-      baseUrl: http://tap-gui.34.136.250.20.nip.io # No port needed with Ingress
+    #app:
+    #  baseUrl: http://tap-gui.34.171.209.37.nip.io # No port needed with Ingress
+    integrations:
+      github: # Other integrations available see NOTE below
+        - host: github.com
+          token: YOUR_GITHUB_TOKEN
     catalog:
       locations:
         - type: url
-          target: https://github.com/tanzu-demo/tap-gui-catalogs/blob/main/blank/catalog-info.yaml
-    backend:
-      baseUrl: http://tap-gui.34.136.250.20.nip.io # No port needed with Ingress
-      cors:
-        origin: http://tap-gui.34.136.250.20.nip.io # No port needed with Ingress
+          target: https://github.com/gabo1208/vmware-tap/blob/main/tap-gui/catalogs/blank/catalog-info.yaml
+    #backend:
+    #  baseUrl: http://tap-gui.34.171.209.37.nip.io # No port needed with Ingress
+    #  cors:
+    #    origin: http://tap-gui.34.171.209.37.nip.io # No port needed with Ingress
 
 metadata_store:
   ns_for_export_app_cert: "*"
