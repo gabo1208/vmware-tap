@@ -1,3 +1,5 @@
 **/test.json
 **/test.dat
 **/*.tar
+.DS_Store
+**/.DS_Store
