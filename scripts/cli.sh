@@ -15,36 +15,40 @@ tanzu_network_info() { # args: info template pkg name
 
 # Install Tanzu CLI
 install_tanzu_cli() {
-  tanzu_network_info "Tanzu CLI"
-  echo -e "DIY instructions for installing Tanzu CLI: https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.2/tap/GUID-install-tanzu-cli.html#install-or-update-the-tanzu-cli-and-plugins-3\n"
-  echo -e "Download the Tanzu CLI binaries from: https://network.pivotal.io/products/tanzu-application-platform#/releases/1205491/file_groups/10484 and save it in this directory as tanzu-cli.tar\n"
-  sleep 1
-  echo -e "Installing Tanzu CLI into the \$HOME/tanzu directory...\n"
-  mkdir $HOME/tanzu
-  tar -xvf tanzu-cli.tar -C $HOME/tanzu
-  export TANZU_CLI_NO_INIT=true
-  echo "Input the version (ex. v0.25.0)"
-  read version
-  export VERSION=$version
-  sudo install $HOME/tanzu/cli/core/$VERSION/tanzu-core-darwin_amd64 /usr/local/bin/tanzu
-  echo -e "\nTanzu CLI successfully installed, executing tanzu version\n"
+  echo -e "DIY instructions for installing Tanzu CLI: https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.3/tap/GUID-install-tanzu-cli.html#install-or-update-the-tanzu-cli-and-plugins-3
+Download the Tanzu CLI binaries from:
+  https://network.pivotal.io/products/tanzu-application-platform#/releases/1205491/file_groups/10484
+Rename it to 'tanzu-cli.tar' and save it to this directory.
+Press any key to continue.
+"
+  read null
+  echo -e "Extracting and installing...\n"
+  mkdir -p /tmp/tanzu
+  tar -xvf tanzu-cli.tar -C /tmp/tanzu
+  sudo install /tmp/tanzu/cli/core/v*/tanzu-core-* /usr/local/bin/tanzu
+  echo -e "\nTanzu CLI successfully installed. Version:"
   tanzu version
 }
 
 # Install Cluster Essentials
 install_cluster_essentials() {
-  tanzu_network_info "Tanzu Cluster Essentials"
-  echo -e "Download the Cluster Essentials binaries from: https://network.tanzu.vmware.com/products/tanzu-cluster-essentials/ and save it in this directory as tanzu-cluster-essentials.tar\n"
-  echo -e "DIY instructions for installing Cluster Essentials: https://docs.vmware.com/en/Cluster-Essentials-for-VMware-Tanzu/1.3/cluster-essentials/GUID-deploy.html\n"
+  # tanzu_network_info "Tanzu Cluster Essentials"
+  echo -e "DIY instructions for installing Cluster Essentials: https://docs.vmware.com/en/Cluster-Essentials-for-VMware-Tanzu/1.3/cluster-essentials/GUID-deploy.html
+Download the Cluster Essentials binaries from:
+	https://network.tanzu.vmware.com/products/tanzu-cluster-essentials/
+Rename it to 'tanzu-cluster-essentials.tar' and save it to this directory.
+Press any key to continue.
+"
+  read null
   echo -e "Installing Cluster Essentials into the \$HOME/tanzu-cluster-essentials directory...\n"
-  mkdir $HOME/tanzu-cluster-essentials
+  mkdir -p $HOME/tanzu-cluster-essentials
   tar -xvf tanzu-cluster-essentials.tar -C $HOME/tanzu-cluster-essentials
   sleep 1
   echo "Deploying Tanzu Cluster Essentials to Cluster"
   echo -e "To advanced configurations (private registries, certificates, etc) visit:\n https://docs.vmware.com/en/Cluster-Essentials-for-VMware-Tanzu/1.3/cluster-essentials/GUID-deploy.html\n"
   echo "Creating kapp-controller namespace..."
   kubectl create namespace kapp-controller
-  
+
   echo "If you already have the required env vars set then proceed, this are the required env vars:"
   echo "INSTALL_BUNDLE: cluster essentials img url and sha to use"
   echo "INSTALL_REGISTRY_HOSTNAME: registry url to be used"
@@ -74,7 +78,7 @@ install_cluster_essentials() {
     export INSTALL_REGISTRY_USERNAME=$registry_username
     export INSTALL_REGISTRY_PASSWORD=$registry_password
   fi
-  
+
   current_dir=$(pwd)
   cd $HOME/tanzu-cluster-essentials
   ./install.sh --yes
@@ -97,7 +101,7 @@ unninstall_cluster_essentials() {
 install_tap() { # args: --values-file for Tap install
   tanzu_network_info "TAP"
   echo "DIY instructions for installing TAP: https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.2/tap/GUID-install.html\n"
-  
+
   echo "If you already have the required env vars set then proceed, this are the required env vars:"
   echo "INSTALL_REGISTRY_HOSTNAME: registry url to be used"
   echo "INSTALL_REGISTRY_USERNAME: registry username"
@@ -173,14 +177,60 @@ install_tap() { # args: --values-file for Tap install
   echo "To check Tap CLI visit: $tap_cli_external_ip:7000\n"
 }
 
+# Gcloud setup
+gcloud_check() {
+	echo "Please check the following gcloud properties are set correctly:"
+  gcloud info | grep Account -A 8
+  echo "Looks good? [Y,n]"
+  read cli_yn
+  if [ "$cli_yn" = "n" ] || [ "$cli_yn" = "N" ]; then
+		exit
+  fi
+}
+
+gcloud_create_cluster() {
+	gcloud_check
+	echo "Which zone do you want to deploy to? [us-central1-a]"
+	read gcloud_zone
+	if [ -z "$gcloud_zone" ]; then
+		gcloud_zone="us-central1-a"
+	fi
+
+	echo "Creating a cluster named 'tap-auto-created' in zone $gcloud_zone with the following parameters:"
+	echo 'gcloud beta container clusters create "tap-auto-created" --zone "$gcloud_zone" --no-enable-basic-auth  --machine-type "e2-standard-8" --num-nodes "6" --enable-autoscaling --min-nodes "0" --max-nodes "12" --enable-autoupgrade --enable-autorepair'
+	gcloud beta container clusters create "tap-auto-created" --zone "$gcloud_zone" --no-enable-basic-auth  --machine-type "e2-standard-8" --num-nodes "6" --enable-autoscaling --min-nodes "0" --max-nodes "12" --enable-autoupgrade --enable-autorepair
+}
+
 ####### Main CLI #######
 # Basic input handling
-if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-  echo "To install [tanzu-cli, cluster-essentials, tap], run:\n./cli.sh \$option"
-  echo "To completely install Tap run the options in the following order:"
-  echo "./cli.sh tanzu-cli && ./cli.sh cluster-essentials && ./cli.sh tap"
+echo "Checking for required binaries..."
+if [ -z "$SKIP_GCLOUD" ]; then
+	which gcloud > /dev/null || echo "`gcloud` cli not installed. Install `gcloud` for google cloud management https://cloud.google.com/sdk/docs/install.\nOr set SKIP_GCLOUD env var to true `SKIP_GCLOUD=1`"
+fi
+which kubectl > /dev/null || echo "`kubectl` cli not installed."
+which tanzu > /dev/null || (echo "`tanzu` cli not installed." && install_tanzu_cli)
+
+# default no params
+if [ -z "$1" ]; then
+	echo "The following operations will be performed:
+	1. Create a GKE cluster
+	2. Install of tanzu cluser essentials
+	3. Install TAP
+Continue? [Y,n]"
+  read cli_yn
+  if [ "$cli_yn" = "n" ] || [ "$cli_yn" = "N" ]; then
+		exit
+  fi
+
+	gcloud_create_cluster
+	install_cluster_essentials
+	install_tap
+
 elif [ "$1" = "tanzu-cli" ]; then
   install_tanzu_cli
+  exit
+elif [ "$1" = "gke-cluster" ]; then
+  gcloud_create_cluster
   exit
 elif [ "$1" = "cluster-essentials" ]; then
   install_cluster_essentials
@@ -189,5 +239,9 @@ elif [ "$1" = "tap" ]; then
   install_tap "./config-values/tap-values.yaml"
   exit
 else
-  echo "Please pass one of this options to install: [tanzu-cli, cluster-essentials, tap] or -h/--help"
+  echo "Invalid option. Valid options are:
+  tanzu-cli 					- to install the tanzu cli
+  gke-cluster					- to create a gke cluster named 'tap-auto-created'
+  cluster-essentials	- to install the tanzu cluster essentials
+  tap 								- to install tap"
 fi
