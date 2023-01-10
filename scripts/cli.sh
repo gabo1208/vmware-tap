@@ -23,9 +23,9 @@ Press any key to continue.
 "
   read null
   echo -e "Extracting and installing...\n"
-  mkdir -p /tmp/tanzu
-  tar -xvf tanzu-cli.tar -C /tmp/tanzu
-  sudo install /tmp/tanzu/cli/core/v*/tanzu-core-* /usr/local/bin/tanzu
+  mkdir -p $HOME/tanzu
+  tar -xvf tanzu-cli.tar -C $HOME/tanzu
+  sudo install $HOME/tanzu/cli/core/v*/tanzu-core-* /usr/local/bin/tanzu
   echo -e "\nTanzu CLI successfully installed. Version:"
   tanzu version
 }
